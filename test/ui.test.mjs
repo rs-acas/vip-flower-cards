@@ -202,7 +202,10 @@ test('setup: adjustments persist, move the card, and test cards print', async ()
   await page.waitForFunction(() => window.shared.length === 1);
   await page.tap('#printLong');
   await page.waitForFunction(() => window.shared.length === 2);
-  assert.deepEqual((await page.evaluate(() => window.shared)).map((s) => s.name), ['test-card-short.pdf', 'test-card-long.pdf']);
+  await page.waitForSelector('#openCalibration[href]', { state: 'attached' });
+  await page.tap('#printCalibration');
+  await page.waitForFunction(() => window.shared.length === 3);
+  assert.deepEqual((await page.evaluate(() => window.shared)).map((s) => s.name), ['test-card-short.pdf', 'test-card-long.pdf', 'calibration-sheet.pdf']);
   assert.deepEqual(errors, []); // checked before screenshots, which inject a style of their own
   await page.screenshot({ path: `${OUT}setup.png`, fullPage: true });
   await page.goBack();

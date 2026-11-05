@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import fontkit from '@pdf-lib/fontkit';
 import * as PDFLib from 'pdf-lib';
 import { PAGE, REF, cleanText, defaultSettings, findUnsupported, layoutCard, sanitizeSettings, wrapLine } from '../public/src/layout.js';
-import { buildCardPdf, createFontTools } from '../public/src/pdf.js';
+import { LETTER, PRINT_FIT, buildCalibrationPdf, buildCardPdf, createFontTools, toSheet } from '../public/src/pdf.js';
 import { SAMPLES } from '../public/src/content.js';
 
 const fontBytes = new Uint8Array(await readFile(new URL('../public/fonts/Gelasio-Regular.ttf', import.meta.url)));
@@ -135,14 +135,42 @@ test('both samples print at default settings; long one exercises the area', () =
   assert.ok(long.lines.at(-1).y > 580, `last baseline ${long.lines.at(-1).y}`);
 });
 
-test('PDF is one page of exactly 4.125 x 9.5 in, with no rotation or crop', async () => {
+test('PDF is one unrotated Letter page, the only size iOS offers this printer', async () => {
   const bytes = await buildCardPdf({ PDFLib, fontkit, fontBytes }, lay(SAMPLES.long));
   const doc = await PDFLib.PDFDocument.load(bytes);
   assert.equal(doc.getPageCount(), 1);
   const page = doc.getPage(0);
-  assert.deepEqual(page.getMediaBox(), { x: 0, y: 0, width: PAGE.width, height: PAGE.height });
+  assert.deepEqual(page.getMediaBox(), { x: 0, y: 0, width: LETTER.width, height: LETTER.height });
   assert.deepEqual(page.getCropBox(), page.getMediaBox());
   assert.equal(page.getRotation().angle, 0);
-  assert.equal(PAGE.width / 72, 4.125);
-  assert.equal(PAGE.height / 72, 9.5);
+});
+
+test('after iOS fits the page, text lands on the card position', () => {
+  const printed = (v, mid) => mid + (v - mid) * PRINT_FIT;
+  for (const [x, y] of [[0, 0], [150.05, 500.12], [297, 684]]) {
+    const at = toSheet(x, y);
+    near(printed(at.x, 306) - 157.5, x);
+    near(printed(at.y, 396), y);
+  }
+});
+
+test('text at the most extreme settings stays on the Letter page', () => {
+  const content = { address: 'A\nB', message: 'word '.repeat(45), sender: 'Ana' };
+  const extremes = [
+    { addressX: -0.25, addressY: -0.25, messageX: -0.25, messageY: 0.5, messageAreaHeight: 2.5 },
+    { addressX: 0.25, addressY: 0.5, messageX: 0.25, messageY: -0.5, messageAreaHeight: 0.75 },
+  ];
+  for (const settings of extremes) {
+    for (const line of lay(content, sanitizeSettings(settings)).lines) {
+      const top = toSheet(line.x, line.y - line.size);
+      const end = toSheet(line.x + tools.measureAt(line.text, line.size), line.y + line.size * REF.descent);
+      assert.ok(top.x >= 0 && top.y >= 0 && end.x <= LETTER.width && end.y <= LETTER.height);
+    }
+  }
+});
+
+test('calibration sheet is one Letter page', async () => {
+  const doc = await PDFLib.PDFDocument.load(await buildCalibrationPdf({ PDFLib, fontkit, fontBytes }));
+  assert.equal(doc.getPageCount(), 1);
+  assert.deepEqual(doc.getPage(0).getMediaBox(), { x: 0, y: 0, width: LETTER.width, height: LETTER.height });
 });

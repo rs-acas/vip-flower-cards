@@ -1,5 +1,5 @@
 import { PAGE, SETTINGS, defaultSettings, findUnsupported, layoutCard, sanitizeSettings } from './layout.js';
-import { buildCardPdf, createFontTools } from './pdf.js';
+import { buildCalibrationPdf, buildCardPdf, createFontTools } from './pdf.js';
 import { SAMPLES, STRINGS } from './content.js';
 
 const KEYS = { draft: 'vipcards.draft.v1', settings: 'vipcards.settings.v1', lang: 'vipcards.lang.v1' };
@@ -50,8 +50,9 @@ function problems(content, card) {
 // Owns one printable PDF. The Open link is cleared the moment content changes and
 // only returns with the new PDF, so it can never open a stale card.
 class PrintTarget {
-  constructor(fileName, getContent, printButton, openLink, messageEl) {
-    Object.assign(this, { fileName, getContent, printButton, openLink, messageEl });
+  // getContent returns card text; a target with makePdf builds a fixed page instead.
+  constructor(fileName, getContent, printButton, openLink, messageEl, makePdf = null) {
+    Object.assign(this, { fileName, getContent, printButton, openLink, messageEl, makePdf });
     this.version = 0;
     this.bytes = null;
     this.url = null;
@@ -65,13 +66,18 @@ class PrintTarget {
     this.bytes = null;
     this.clearLink();
     clearTimeout(this.timer);
-    const content = this.getContent();
-    const card = layout(content);
-    const printable = !card.isEmpty && problems(content, card).length === 0;
+    const printable = this.isPrintable();
     this.printButton.disabled = !printable;
     this.openLink.classList.toggle('is-disabled', !printable);
     this.pending = null;
     if (printable) this.timer = setTimeout(() => this.build(), 120);
+  }
+
+  isPrintable() {
+    if (this.makePdf) return true;
+    const content = this.getContent();
+    const card = layout(content);
+    return !card.isEmpty && problems(content, card).length === 0;
   }
 
   clearLink() {
@@ -86,7 +92,8 @@ class PrintTarget {
   build() {
     if (this.pending) return this.pending;
     const version = this.version;
-    this.pending = buildCardPdf(pdfDeps, layout(this.getContent())).then((bytes) => {
+    const making = this.makePdf ? this.makePdf() : buildCardPdf(pdfDeps, layout(this.getContent()));
+    this.pending = making.then((bytes) => {
       if (version !== this.version) return null;
       this.bytes = bytes;
       this.url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
@@ -185,6 +192,7 @@ function renderSetup() {
   }
   shortTarget.refresh();
   longTarget.refresh();
+  calibrationTarget.refresh();
 }
 
 function applyLanguage() {
@@ -244,6 +252,7 @@ function showRoute() {
 let shortTarget;
 let longTarget;
 let cardTarget;
+let calibrationTarget;
 
 async function start() {
   const fontBytes = await fetch('fonts/Gelasio-Regular.ttf').then((r) => {
@@ -258,6 +267,7 @@ async function start() {
   cardTarget = new PrintTarget('flower-card.pdf', currentCard, $('print'), $('openPdf'), $('printMessage'));
   shortTarget = new PrintTarget('test-card-short.pdf', () => SAMPLES.short, $('printShort'), $('openShort'), $('testMessage'));
   longTarget = new PrintTarget('test-card-long.pdf', () => SAMPLES.long, $('printLong'), $('openLong'), $('testMessage'));
+  calibrationTarget = new PrintTarget('calibration-sheet.pdf', () => null, $('printCalibration'), $('openCalibration'), $('testMessage'), () => buildCalibrationPdf(pdfDeps));
 
   const draft = read(KEYS.draft);
   for (const [name, el] of Object.entries(fields)) {
