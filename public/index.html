@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; connect-src 'self'; img-src 'self'; manifest-src 'self'; base-uri 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <meta name="format-detection" content="telephone=no, address=no">
+  <meta name="theme-color" content="#23402f">
+  <title>VIP Flower Card</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/pdf-lib.min.js" defer></script>
+  <script src="vendor/fontkit.umd.min.js" defer></script>
+  <script src="src/app.js" type="module"></script>
+</head>
+<body>
+  <p id="loading" class="loading">…</p>
+  <div id="app" hidden>
+    <header class="topbar">
+      <h1 data-i18n="appTitle"></h1>
+      <div class="lang" role="group" aria-label="Language / Idioma">
+        <button type="button" data-lang="en">English</button>
+        <button type="button" data-lang="es">Español</button>
+      </div>
+    </header>
+
+    <main id="cardScreen">
+      <label class="field">
+        <span data-i18n="addressLabel"></span>
+        <small data-i18n="addressHint"></small>
+        <textarea id="address" rows="4" autocapitalize="words" autocomplete="off"></textarea>
+      </label>
+      <label class="field">
+        <span data-i18n="messageLabel"></span>
+        <textarea id="message" rows="5" autocapitalize="sentences" autocomplete="off"></textarea>
+      </label>
+      <label class="field">
+        <span data-i18n="senderLabel"></span>
+        <small data-i18n="senderHint"></small>
+        <textarea id="sender" rows="2" autocapitalize="sentences" autocomplete="off"></textarea>
+      </label>
+
+      <div id="warnings" class="warnings" role="alert" hidden></div>
+      <p id="notice" class="notice" role="status"></p>
+
+      <h2 data-i18n="previewTitle"></h2>
+      <div class="sheet"><svg id="preview" viewBox="0 0 297 684" role="img" aria-labelledby="previewLabel"><title id="previewLabel">Card preview</title></svg></div>
+
+      <p class="hint" data-i18n="printHint"></p>
+      <button type="button" id="print" class="primary" data-i18n="print"></button>
+      <p id="printMessage" class="action-message" role="status"></p>
+      <p class="hint fallback"><span data-i18n="fallbackHint"></span> <span data-i18n="openPdfHint"></span></p>
+      <a id="openPdf" class="secondary" target="_blank" data-i18n="openPdf"></a>
+
+      <button type="button" id="newCard" class="secondary new-card" data-i18n="newCard"></button>
+      <a href="#setup" class="setup-link" data-i18n="printerSetup"></a>
+    </main>
+
+    <main id="setupScreen" hidden>
+      <a href="#" class="secondary" data-i18n="back"></a>
+      <h2 data-i18n="setupTitle"></h2>
+
+      <h3 data-i18n="testTitle"></h3>
+      <p class="hint" data-i18n="testHint"></p>
+      <button type="button" id="printShort" class="primary" data-i18n="testShort"></button>
+      <a id="openShort" class="secondary" target="_blank" data-i18n="openPdf"></a>
+      <button type="button" id="printLong" class="primary" data-i18n="testLong"></button>
+      <a id="openLong" class="secondary" target="_blank" data-i18n="openPdf"></a>
+      <p id="testMessage" class="action-message" role="status"></p>
+
+      <h3 data-i18n="adjustTitle"></h3>
+      <p class="hint" data-i18n="adjustHint"></p>
+      <div id="adjustments"></div>
+      <p class="hint" data-i18n="guideNote"></p>
+      <div class="sheet"><svg id="setupPreview" viewBox="0 0 297 684" role="img" aria-label="Test card preview"></svg></div>
+      <button type="button" id="reset" class="secondary" data-i18n="reset"></button>
+    </main>
+  </div>
+
+  <dialog id="confirm">
+    <form method="dialog">
+      <h2 id="confirmTitle"></h2>
+      <p id="confirmBody"></p>
+      <button value="yes" id="confirmYes" class="danger"></button>
+      <button value="no" class="secondary" data-i18n="confirmNo" autofocus></button>
+    </form>
+  </dialog>
+</body>
+</html>
