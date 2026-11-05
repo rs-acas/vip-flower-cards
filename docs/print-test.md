@@ -11,7 +11,11 @@ including failures.
 A #10 PDF did not keep its size. iOS offered only US Letter, even with Feed tried as an option,
 and enlarged the page about 10–12%. Printer job 388 recorded `media=na_letter_8.5x11in` and
 `print-scaling=auto`. Share sheet, Print and centring all worked, so the tool now sends a Letter
-page positioned for the stock. Its scale is provisional until step 1 below.
+page positioned for the stock.
+
+Calibration on real stock, measured with a tape: a mark 1.00 in down printed at exactly 1.00 in,
+and a mark 5.50 in down printed at about 5.6 in. So iOS prints a Letter page at full size and
+`PRINT_FIT` is 1. Top of the card to the middle of the bottom VIP logo is 9.00 in.
 
 ## What the printer reports (read from it directly, 2026-11-04, firmware 1.15)
 
@@ -25,14 +29,15 @@ page positioned for the stock. Its scale is provisional until step 1 below.
 
 The reference text sits well inside those margins, and the tool stops text 0.25 in from the bottom edge.
 
-## 1. Calibration sheet (plain Letter paper, main tray)
+## 1. Calibration sheet (only if cards print out of place)
 
-Measure with a ruler and report all three. Nothing else can be tuned until these are known.
+Works on stock or Letter paper. Measure from the top edge of the paper.
 
 - [ ] Printer setup > **Print calibration sheet**.
-- [ ] Top edge of the paper to line A: ______ in
-- [ ] Line A to line B (9.00 in at full size): ______ in
-- [ ] Width of line C (6.00 in at full size): ______ in
+- [ ] Top edge to line A (1.00 in at full size): ______ in
+- [ ] Top edge to line C (5.50 in at full size): ______ in
+- [ ] Top edge to line B (9.00 in at full size): ______ in
+- [ ] Width of line C (3.00 in at full size): ______ in
 
 ## 2. Plain paper trimmed to 4.125 × 9.5 in, manual slot
 

@@ -26,8 +26,8 @@ with the PDF (HTTPS only). Open PDF is the fallback.
 
 **The PDF is a Letter page, not a #10 page.** In testing, iOS offered only US Letter for the
 Brother HL-L2460DW and enlarged a #10 PDF to fit it. So `toSheet` in `public/src/pdf.js` places
-the #10 layout on a Letter page where it lands on the stock, and `PRINT_FIT` cancels iOS's fit
-to the printer's margins. `PRINT_FIT` is provisional until the calibration sheet is measured.
+the #10 layout on a Letter page where it lands on the stock. Measured on stock, iOS prints a
+Letter page at full size, so `PRINT_FIT` is 1. The calibration sheet in Printer setup rechecks that.
 The live preview still shows the #10 card, because that is what comes out.
 
 `display: browser` in the manifest is deliberate, so that the Home Screen icon opens in Safari,

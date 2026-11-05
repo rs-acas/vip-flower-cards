@@ -3,10 +3,10 @@ import { PAGE } from './layout.js';
 export const LETTER = { width: 612, height: 792 };
 
 // iOS offers this printer only Letter, so the PDF must be a Letter page. The card stock
-// sits centred in the feed, with its top edge at the top of the sheet. iOS then fits the
-// page inside the printer's 12 pt margins, shrinking a Letter page to this fraction.
-// PROVISIONAL: inferred from the first print. Replace with the calibration-sheet result.
-export const PRINT_FIT = 588 / 612;
+// sits centred in the feed, with its top edge at the top of the sheet. Measured on stock
+// (2026-11-04): a mark 1.00 in down printed at exactly 1.00 in, so iOS prints a Letter page
+// at full size. Set this below 1 only if a later calibration sheet shows it shrinking.
+export const PRINT_FIT = 1;
 
 // Where to draw on the Letter page so the mark lands on (x, y) of the printed card.
 export function toSheet(x, y) {
@@ -62,8 +62,8 @@ export async function buildCardPdf(deps, card) {
   return doc.save();
 }
 
-// Plain-paper sheet with no compensation, for measuring what iOS does to a Letter page.
-// Lines A and B are 9 in apart and C is 6 in wide. See docs/print-test.md.
+// Sheet with no compensation, for measuring what iOS does to a Letter page. Everything sits
+// inside the 4.125 in stock, so it works on stock or Letter paper. See docs/print-test.md.
 export async function buildCalibrationPdf(deps) {
   const { PDFLib, fontBytes } = deps;
   const doc = await newDocument(deps, 'Calibration sheet');
@@ -77,16 +77,16 @@ export async function buildCalibrationPdf(deps) {
     color: black,
   });
   const label = (text, x, y) => page.drawText(text, { x, y: LETTER.height - y, size: 12, font, color: black });
-  rule(90, 72, 522, 72); // A: 1 in from the top
-  label('A', 80, 76);
-  rule(90, 720, 522, 720); // B: 10 in from the top
-  label('B', 80, 724);
-  rule(306, 72, 306, 720);
-  rule(90, 396, 522, 396); // C: 6 in wide, centred
-  rule(90, 390, 90, 402);
-  rule(522, 390, 522, 402);
-  label('C', 80, 400);
-  label('A to B = 9.00 in at full size', 318, 200);
-  label('C = 6.00 in at full size', 318, 220);
+  rule(198, 72, 414, 72); // A: 1 in from the top
+  label('A', 180, 76);
+  rule(198, 648, 414, 648); // B: 9 in from the top
+  label('B', 180, 652);
+  rule(306, 72, 306, 648);
+  rule(198, 396, 414, 396); // C: 3 in wide, 5.5 in from the top
+  rule(198, 390, 198, 402);
+  rule(414, 390, 414, 402);
+  label('C', 180, 400);
+  label('A to B: 8.00 in', 314, 200);
+  label('C: 3.00 in', 314, 220);
   return doc.save();
 }
