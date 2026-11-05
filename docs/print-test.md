@@ -15,7 +15,11 @@ page positioned for the stock.
 
 Calibration on real stock, measured with a tape: a mark 1.00 in down printed at exactly 1.00 in,
 and a mark 5.50 in down printed at about 5.6 in. So iOS prints a Letter page at full size and
-`PRINT_FIT` is 1. Top of the card to the middle of the bottom VIP logo is 9.00 in.
+`PRINT_FIT` is 1. Top of the card to the middle of the bottom VIP logo is 9.00 in, and to the
+top of the first VIP logo is 2.50 in.
+
+The florist asked for the message at the top and the address at the bottom, reversing the original
+reference. The message now sits centred above the top logo, and the address on the bottom panel.
 
 ## What the printer reports (read from it directly, 2026-11-04, firmware 1.15)
 
@@ -43,8 +47,8 @@ Works on stock or Letter paper. Measure from the top edge of the paper.
 
 - [ ] **Print short test card**. Was Double-sided off? ______
 - [ ] Did it take from the **manual slot**, with no error? Any error text: ______
-- [ ] Top edge to the top of the address's first line. Reference: about 0.58 in. Result: ______
-- [ ] Top edge to the top of the message's first line. Reference: about 6.82 in. Result: ______
+- [ ] Is the message centred in the space above the top logo? ______
+- [ ] Top edge to the top of the address's first line. Expected: about 6.8 in. Result: ______
 - [ ] Width of `Houston, TX, 77007`. Reference: about 1.47 in. Result: ______
 
 ## 3. Real stock
@@ -53,14 +57,14 @@ Works on stock or Letter paper. Measure from the top edge of the paper.
 - [ ] Does the stock feed cleanly with no jam, smear or curl? ______
 - [ ] Print the **short** card, then the **long** card.
 - [ ] Fold both and place them in a card holder.
-- [ ] Is all of the short message on the bottom panel, clear of the perforation? ______
-- [ ] Is the long message clear of the rose and the logo? ______
+- [ ] Is the long message clear of the top logo, with its last line showing? ______
+- [ ] Is the address clear of the rose and the bottom logo? ______
 - [ ] Top edge to each perforation: ______ / ______ in. Top edge to the top of the bottom logo: ______ in
 
 ## 4. Adjust, if needed
 
 Printer setup holds the alignment and **Message area height** controls.
-Height is provisional at 1.75 in. Reduce it if the long card's last lines are hidden after folding.
+Height is 1.875 in, stopping 0.125 in above the top logo. Reduce it if long messages sit too close.
 Change one thing at a time and reprint the same test card.
 
 ## 5. A real card

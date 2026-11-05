@@ -9,13 +9,14 @@ content security policy allows requests only to its own static files.
 
 ## Layout
 
-`public/src/layout.js` holds the geometry, measured from the reference card (PDF and PSD, kept outside this repo)
-(Georgia 12 pt on 14.4 pt line spacing, both blocks centred, slightly right of page centre).
+`public/src/layout.js` holds the geometry for the three-panel stock. The message and sender sit
+above the top logo, centred both ways, and the address sits on the bottom panel, narrow enough to
+clear the rose. Both use Georgia-style 12 pt on 14.4 pt line spacing, centred on the middle of the card.
 The preview and the PDF draw the same line list, so they can't disagree.
 
 - Text shrinks from 12 pt to 9 pt, then warns and blocks printing. It is never clipped.
-- The message area height is 1.75 in by default and **provisional** until the folded test. It is adjustable in Printer setup.
-- The address area is 1.25 in. It isn't adjustable yet.
+- The message area height is 1.875 in by default, stopping 0.125 in above the top logo. It is adjustable in Printer setup.
+- The address area is 1.25 in high and 2.25 in wide. Those aren't adjustable yet.
 - The font is Gelasio (SIL OFL), which is metric-compatible with Georgia. Emoji can't print, so they trigger a warning.
 - Interface language is labels only. `layoutCard` has no language input.
 

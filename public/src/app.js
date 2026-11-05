@@ -1,8 +1,8 @@
-import { PAGE, SETTINGS, defaultSettings, findUnsupported, layoutCard, sanitizeSettings } from './layout.js';
+import { SETTINGS, defaultSettings, findUnsupported, layoutCard, sanitizeSettings } from './layout.js';
 import { buildCalibrationPdf, buildCardPdf, createFontTools } from './pdf.js';
 import { SAMPLES, STRINGS } from './content.js';
 
-const KEYS = { draft: 'vipcards.draft.v1', settings: 'vipcards.settings.v1', lang: 'vipcards.lang.v1' };
+const KEYS = { draft: 'vipcards.draft.v1', settings: 'vipcards.settings.v2', lang: 'vipcards.lang.v1' };
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const $ = (id) => document.getElementById(id);
 
@@ -140,9 +140,9 @@ function drawPreview(svg, card, { guides = false } = {}) {
   if (guides) {
     for (const box of Object.values(card.guides)) {
       const rect = document.createElementNS(SVG_NS, 'rect');
-      rect.setAttribute('x', 36);
+      rect.setAttribute('x', box.left);
       rect.setAttribute('y', box.top);
-      rect.setAttribute('width', PAGE.width - 72);
+      rect.setAttribute('width', box.width);
       rect.setAttribute('height', box.bottom - box.top);
       rect.setAttribute('class', 'guide');
       nodes.push(rect);

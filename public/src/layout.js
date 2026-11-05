@@ -4,29 +4,28 @@
 
 export const PAGE = { width: 297, height: 684 }; // 4.125 x 9.5 in (#10 print size)
 
-// Measured from the reference card (PDF and PSD), the layout authority. Both blocks are
-// centre-aligned, and neither centre is the middle of the page (148.5); that offset
-// is part of the reference, so it is reproduced rather than tidied up.
+// Stock: three perforated panels, each with a printed logo footer. The top logo starts
+// 2.5 in down; a rose sits in the left 0.9 in of the bottom panel. The message goes above
+// the top logo, the address on the bottom panel, and both centre on the middle of the card.
 export const REF = Object.freeze({
   fontSize: 12,
   minFontSize: 9,
   fontStep: 0.5,
   leading: 1.2,
   descent: 0.25, // room below the last baseline, as a fraction of font size
-  maxWidth: 225, // 3.125 in
-  address: { centerX: 153.17, firstBaseline: 51.08, height: 90 }, // up to 1.25 in
-  message: { centerX: 150.05, firstBaseline: 500.12 },
-  bottomLimit: 666, // keep text at least 0.25 in from the bottom edge
+  centerX: PAGE.width / 2,
+  message: { top: 36, maxWidth: 225 }, // 0.5 in down, 3.125 in wide
+  address: { top: 488.12, height: 90, maxWidth: 162 }, // 2.25 in wide, clear of the rose
 });
 
 // Stored in inches because that is what a ruler reads after a test print.
 export const SETTINGS = Object.freeze({
   addressX: { default: 0, min: -0.25, max: 0.25, step: 0.0625 },
-  addressY: { default: 0, min: -0.25, max: 0.5, step: 0.0625 },
+  addressY: { default: 0, min: -0.5, max: 0.5, step: 0.0625 },
   messageX: { default: 0, min: -0.25, max: 0.25, step: 0.0625 },
-  messageY: { default: 0, min: -0.5, max: 0.5, step: 0.0625 },
-  // Provisional until the first folded print test.
-  messageAreaHeight: { default: 1.75, min: 0.75, max: 2.5, step: 0.125 },
+  messageY: { default: 0, min: -0.25, max: 0.5, step: 0.0625 },
+  // Default stops 0.125 in above the top logo.
+  messageAreaHeight: { default: 1.875, min: 0.75, max: 2, step: 0.125 },
 });
 
 export function defaultSettings() {
@@ -100,23 +99,26 @@ export function wrapLine(line, maxWidth, measure) {
   return out;
 }
 
+const blockHeight = (lineCount, size) =>
+  size + (lineCount - 1) * size * REF.leading + size * REF.descent;
+
 // Largest size from fontSize down to minFontSize at which the lines fit. If none
 // does, returns the minimum size with overflow set, so the caller must warn.
-function fit(sourceLines, roomBelowFirstBaseline, measureAt) {
+function fit(sourceLines, height, maxWidth, measureAt) {
   for (let size = REF.fontSize; ; size -= REF.fontStep) {
     const measure = (s) => measureAt(s, size);
-    const lines = sourceLines.flatMap((l) => wrapLine(l, REF.maxWidth, measure));
-    const used = (lines.length - 1) * size * REF.leading + size * REF.descent;
-    const overflow = used > roomBelowFirstBaseline + 0.001;
-    if (!overflow || size <= REF.minFontSize) return { size, lines, overflow, measure };
+    const lines = sourceLines.flatMap((l) => wrapLine(l, maxWidth, measure));
+    const used = blockHeight(lines.length, size);
+    const overflow = used > height + 0.001;
+    if (!overflow || size <= REF.minFontSize) return { size, lines, used, overflow, measure };
   }
 }
 
-function place(block, centerX, firstBaseline, region, limitY) {
+function place(block, centerX, top, region, limitY) {
   const placed = [];
   block.lines.forEach((text, i) => {
     if (!text) return;
-    const y = firstBaseline + i * block.size * REF.leading;
+    const y = top + block.size + i * block.size * REF.leading;
     placed.push({
       text,
       x: centerX - block.measure(text) / 2,
@@ -136,22 +138,27 @@ export function layoutCard({ address, message, sender }, settings, measureAt) {
   const messageLines = cleanText(message);
   const senderLines = cleanText(sender);
 
-  const addressBaseline = REF.address.firstBaseline + s.addressY * 72;
-  const addressBottom = addressBaseline - REF.fontSize + REF.address.height;
-  const addressBlock = fit(addressLines, addressBottom - addressBaseline, measureAt);
-
   const body = messageLines.length && senderLines.length
-    ? [...messageLines, '', ...senderLines] // one blank line, as in the reference
+    ? [...messageLines, '', ...senderLines] // one blank line between them
     : [...messageLines, ...senderLines];
-  const messageBaseline = REF.message.firstBaseline + s.messageY * 72;
-  const areaTop = messageBaseline - REF.fontSize;
-  const areaBottom = Math.min(areaTop + s.messageAreaHeight * 72, REF.bottomLimit);
-  const messageBlock = fit(body, areaBottom - messageBaseline, measureAt);
+  const areaTop = REF.message.top + s.messageY * 72;
+  const areaHeight = s.messageAreaHeight * 72;
+  const areaBottom = areaTop + areaHeight;
+  const messageBlock = fit(body, areaHeight, REF.message.maxWidth, measureAt);
+  // Vertically centred in the area. Text that overflows starts at the top of it.
+  const messageTop = areaTop + Math.max(0, (areaHeight - messageBlock.used) / 2);
 
+  const addressTop = REF.address.top + s.addressY * 72;
+  const addressBottom = addressTop + REF.address.height;
+  const addressBlock = fit(addressLines, REF.address.height, REF.address.maxWidth, measureAt);
+
+  const box = (top, bottom, centerX, maxWidth) => ({ top, bottom, left: centerX - maxWidth / 2, width: maxWidth });
+  const messageX = REF.centerX + s.messageX * 72;
+  const addressX = REF.centerX + s.addressX * 72;
   return {
     lines: [
-      ...place(addressBlock, REF.address.centerX + s.addressX * 72, addressBaseline, 'address', addressBottom),
-      ...place(messageBlock, REF.message.centerX + s.messageX * 72, messageBaseline, 'message', areaBottom),
+      ...place(addressBlock, addressX, addressTop, 'address', addressBottom),
+      ...place(messageBlock, messageX, messageTop, 'message', areaBottom),
     ],
     addressSize: addressBlock.size,
     messageSize: messageBlock.size,
@@ -159,8 +166,8 @@ export function layoutCard({ address, message, sender }, settings, measureAt) {
     messageOverflow: body.length > 0 && messageBlock.overflow,
     isEmpty: addressLines.length + body.length === 0,
     guides: {
-      address: { top: addressBaseline - REF.fontSize, bottom: addressBottom },
-      message: { top: areaTop, bottom: areaBottom },
+      address: box(addressTop, addressBottom, addressX, REF.address.maxWidth),
+      message: box(areaTop, areaBottom, messageX, REF.message.maxWidth),
     },
   };
 }

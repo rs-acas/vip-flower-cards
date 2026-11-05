@@ -13,19 +13,23 @@ const lay = (content, settings = defaultSettings()) => layoutCard(content, setti
 const texts = (card, region) => card.lines.filter((l) => l.region === region).map((l) => l.text);
 const near = (a, b, eps = 0.01) => assert.ok(Math.abs(a - b) < eps, `${a} !~ ${b}`);
 
-test('short card lands on the reference baselines at 12 pt', () => {
+test('short card: message centred above the logo, address on the bottom panel, at 12 pt', () => {
   const card = lay({ address: '1234 Sample St\nUnit A\nHouston, TX, 77007', message: 'Happy Birthday', sender: '— from Sample' });
-  const y = card.lines.map((l) => l.y);
-  [51.08, 65.48, 79.88, 500.12, 528.92].forEach((v, i) => near(y[i], v));
+  const [one, two, three, message, sender] = card.lines;
+  assert.deepEqual([one, two, three].map((l) => l.region), ['address', 'address', 'address']);
+  near(one.y, 500.12);
+  near(three.y, 528.92);
+  assert.ok(sender.y < one.y && message.y > 36 && sender.y < 171);
+  const blockTop = message.y - 12;
+  const blockBottom = sender.y + 12 * REF.descent;
+  near(blockTop - card.guides.message.top, card.guides.message.bottom - blockBottom);
   assert.ok(card.lines.every((l) => l.size === 12));
   assert.ok(!card.addressOverflow && !card.messageOverflow);
 });
 
-test('lines are centred on the reference centres, not the page centre', () => {
-  const card = lay(SAMPLES.short);
-  for (const line of card.lines) {
-    const center = REF[line.region].centerX;
-    near(line.x + tools.measureAt(line.text, line.size) / 2, center);
+test('every line is centred on the middle of the card', () => {
+  for (const line of lay(SAMPLES.long).lines) {
+    near(line.x + tools.measureAt(line.text, line.size) / 2, PAGE.width / 2);
   }
 });
 
@@ -44,8 +48,8 @@ test('sender is optional and a message-only card has no extra lines', () => {
   assert.deepEqual(texts(lay({ address: '', message: 'Solo esto', sender: '' }), 'message'), ['Solo esto']);
 });
 
-test('sender alone takes the first message position', () => {
-  near(lay({ address: '', message: '', sender: 'Ana' }).lines[0].y, 500.12);
+test('sender alone sits where a one-line message would', () => {
+  near(lay({ address: '', message: '', sender: 'Ana' }).lines[0].y, lay({ address: '', message: 'Ana', sender: '' }).lines[0].y);
 });
 
 test('sender moves down as the message wraps', () => {
@@ -78,14 +82,19 @@ test('text that fits stays inside the configured area', () => {
 });
 
 test('area height is what decides overflow', () => {
-  const content = { address: '', message: 'palabra '.repeat(60), sender: '' };
-  assert.equal(lay(content, sanitizeSettings({ messageAreaHeight: 2.5 })).messageSize, 12);
+  const content = { address: '', message: 'palabra '.repeat(40), sender: '' };
+  assert.equal(lay(content, sanitizeSettings({ messageAreaHeight: 2 })).messageSize, 12);
   assert.ok(lay(content, sanitizeSettings({ messageAreaHeight: 0.75 })).messageOverflow);
 });
 
-test('message area can never run off the bottom of the page', () => {
-  const card = lay({ address: '', message: 'x', sender: '' }, sanitizeSettings({ messageAreaHeight: 2.5, messageY: 0.5 }));
-  assert.ok(card.guides.message.bottom <= REF.bottomLimit);
+test('by default the message area stops above the top logo', () => {
+  assert.ok(lay(SAMPLES.short).guides.message.bottom < 2.5 * 72);
+});
+
+test('address stays clear of the rose, and above the bottom logo', () => {
+  const { left, bottom } = lay(SAMPLES.long).guides.address;
+  assert.ok(left >= 0.9 * 72);
+  assert.ok(bottom < 8.6 * 72);
 });
 
 test('address overflow is separate from message overflow', () => {
@@ -95,13 +104,13 @@ test('address overflow is separate from message overflow', () => {
 
 test('a word wider than the card breaks rather than clips', () => {
   const word = 'a'.repeat(120);
-  const parts = wrapLine(word, REF.maxWidth, (s) => tools.measureAt(s, 12));
+  const parts = wrapLine(word, REF.message.maxWidth, (s) => tools.measureAt(s, 12));
   assert.equal(parts.join(''), word);
-  assert.ok(parts.every((p) => tools.measureAt(p, 12) <= REF.maxWidth));
+  assert.ok(parts.every((p) => tools.measureAt(p, 12) <= REF.message.maxWidth));
 });
 
 test('every wrapped line fits the text width', () => {
-  for (const l of lay(SAMPLES.long).lines) assert.ok(tools.measureAt(l.text, l.size) <= REF.maxWidth);
+  for (const l of lay(SAMPLES.long).lines) assert.ok(tools.measureAt(l.text, l.size) <= REF[l.region].maxWidth);
 });
 
 test('adjustments move only their own block', () => {
@@ -115,8 +124,8 @@ test('adjustments move only their own block', () => {
 test('settings are clamped and bad stored values fall back', () => {
   const s = sanitizeSettings({ addressX: 9, messageAreaHeight: 'nope', messageY: -9 });
   assert.equal(s.addressX, 0.25);
-  assert.equal(s.messageAreaHeight, 1.75);
-  assert.equal(s.messageY, -0.5);
+  assert.equal(s.messageAreaHeight, 1.875);
+  assert.equal(s.messageY, -0.25);
 });
 
 test('Spanish punctuation is supported; emoji is reported', () => {
@@ -132,7 +141,8 @@ test('both samples print at default settings; long one exercises the area', () =
   assert.equal(lay(SAMPLES.short).messageSize, 12);
   const long = lay(SAMPLES.long);
   assert.ok(!long.messageOverflow && !long.addressOverflow);
-  assert.ok(long.lines.at(-1).y > 580, `last baseline ${long.lines.at(-1).y}`);
+  assert.ok(long.messageSize < 12, 'long sample should exercise shrinking');
+  assert.ok(long.lines.at(-1).y > 150, `last baseline ${long.lines.at(-1).y}`);
 });
 
 test('PDF is one unrotated Letter page, the only size iOS offers this printer', async () => {
@@ -157,8 +167,8 @@ test('after iOS fits the page, text lands on the card position', () => {
 test('text at the most extreme settings stays on the Letter page', () => {
   const content = { address: 'A\nB', message: 'word '.repeat(45), sender: 'Ana' };
   const extremes = [
-    { addressX: -0.25, addressY: -0.25, messageX: -0.25, messageY: 0.5, messageAreaHeight: 2.5 },
-    { addressX: 0.25, addressY: 0.5, messageX: 0.25, messageY: -0.5, messageAreaHeight: 0.75 },
+    { addressX: -0.25, addressY: 0.5, messageX: -0.25, messageY: -0.25, messageAreaHeight: 2 },
+    { addressX: 0.25, addressY: -0.5, messageX: 0.25, messageY: 0.5, messageAreaHeight: 0.75 },
   ];
   for (const settings of extremes) {
     for (const line of lay(content, sanitizeSettings(settings)).lines) {
